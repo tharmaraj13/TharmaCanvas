@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.querySelector('#canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        ctx.strokeStyle = 'cyan';
+        ctx.fillStyle = 'cyan';
+        ctx.lineWidth = 4;
+
+        const size = 150;
+
+        let x1 = size, y1 = size;
+        let x2 = size, y2 = size;
+        let dx = 1;
+        let dy = 1;
+        let progress = 0;
+        let speed = 0.01;
+        let isAnimating = false;
+
+        const image = new Image();
+        image.src = 'assets/dora.png';
+        image.onload = () => {
+            ctx.drawImage(image, x1 - size / 2, y1 - size / 2, size, size);
+        };
+
+        const animation = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const xPos = x1 + dx * progress;
+            const yPos = y1 + dy * progress;
+
+            ctx.drawImage(image, xPos - size / 2, yPos - size / 2, size, size);
+            if (progress < 1) {
+                isAnimating = true;
+                progress += speed;
+                requestAnimationFrame(animation);
+            } else {
+                x1 = xPos;
+                y1 = yPos;
+                isAnimating = false;
+            }
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (isAnimating) return;
+            x2 = e.x;
+            y2 = e.y;
+            dx = x2 - x1;
+            dy = y2 - y1;
+            progress = 0;
+            animation();
+        });
+        // ctx.fill();
+    </script>
+</body>
+
+</html>
