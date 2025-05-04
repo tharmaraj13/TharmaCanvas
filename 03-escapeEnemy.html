@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        #gameDiv {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            background-color: rgba(255, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="gameDiv">
+        <p id="gameText">Let's Play!</p>
+        <button id="startBtn">Start</button>
+    </div>
+    <script>
+        const canvas = document.querySelector('#canvas');
+        const gameDiv = document.querySelector('#gameDiv');
+        const gameText = document.querySelector('#gameText');
+        const startBtn = document.querySelector('#startBtn');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            speed: 0.1,
+            width: 100,
+            height: 120,
+        }
+
+        const enemy = {
+            x: 100,
+            y: 100,
+            speedX: 3,
+            speedY: 3,
+            width: 140,
+            height: 150,
+        }
+
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
+        let gameRunning = false;
+        const playerImg = new Image();
+        const enemyImg = new Image();
+        playerImg.src = 'assets/dora.png';
+        enemyImg.src = 'assets/mouse.png';
+
+        function gameStart() {
+            gameRunning = true;
+            gameDiv.style.display = 'none';
+            mouseX = canvas.width / 2;
+            mouseY = canvas.height / 2;
+
+            player.x = mouseX;
+            player.y = mouseY;
+
+            enemy.x = 100;
+            enemy.y = 100;
+            enemy.speedX = 3;
+            enemy.speedY = 3;
+
+            animation();
+        }
+        startBtn.addEventListener('click', gameStart);
+        canvas.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        function checkCollision(player, enemy) {
+            return (
+                enemy.x < player.x + player.width &&
+                player.x < enemy.x + enemy.width &&
+                player.y < enemy.y + enemy.height &&
+                enemy.y < player.y + player.height
+            );
+        }
+        function update() {
+
+            const dx = mouseX - player.x - player.width / 2;
+            const dy = mouseY - player.y - player.height / 2;
+
+            player.x += dx * player.speed;
+            player.y += dy * player.speed;
+
+            enemy.x += enemy.speedX;
+            enemy.y += enemy.speedY;
+
+            if (enemy.x < 0 || enemy.x + enemy.width > canvas.width) {
+                enemy.speedX *= -1;
+            }
+            if (enemy.y < 0 || enemy.y + enemy.height > canvas.height) {
+                enemy.speedY *= -1;
+            }
+
+            if (checkCollision(player, enemy)) {
+                gameRunning = false;
+                gameDiv.style.display = 'block';
+                startBtn.innerHTML = 'Play Agin';
+                gameText.innerHTML = 'Game Over!';
+            }
+
+        }
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+            ctx.drawImage(enemyImg, enemy.x, enemy.y, enemy.width, enemy.height);
+        }
+        function animation() {
+            if (gameRunning) {
+                update();
+                draw();
+                requestAnimationFrame(animation);
+            }
+        }
+    </script>
+</body>
+
+</html>
