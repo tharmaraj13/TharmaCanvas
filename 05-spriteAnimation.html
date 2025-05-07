@@ -52,7 +52,7 @@
         const centerRow = Math.floor(rows / 2);
         const centerCol = Math.floor(cols / 2);
 
-        const world = [];
+        let world = [];
         for (let y = 0; y < rows; y++) {
             world.push([]);
             for (let x = 0; x < cols; x++) {
@@ -149,6 +149,11 @@
             }
         });
         animation();
+        // grassImg.onload = async () => {
+        //     const response = await fetch('assets/world.json');
+        //     world = await response.json();
+        //     animation();
+        // }
     </script>
 </body>
 
