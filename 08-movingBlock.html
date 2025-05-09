@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tile World</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.querySelector('#canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+
+        function loadImage(src) {
+            const img = new Image();
+            img.src = src;
+            return img;
+        }
+        const wallImg = loadImage('assets/wall.png');
+        const grassImg = loadImage('assets/grass.png');
+        const blockImg = loadImage('assets/block.png');
+        const pathImg = loadImage('assets/path.png');
+        // const playerImg = loadImage('assets/player.png');
+
+        const playerDown = loadImage('assets/playerDown.png');
+        const playerUp = loadImage('assets/playerUp.png');
+        const playerLeft = loadImage('assets/playerLeft.png');
+        const playerRight = loadImage('assets/playerRight.png');
+
+        const playerImages = {
+            down: playerDown,
+            up: playerUp,
+            left: playerLeft,
+            right: playerRight,
+        }
+
+        const tileSize = 90;
+        const rows = Math.ceil(canvas.height / tileSize);
+        const cols = Math.ceil(canvas.width / tileSize);
+
+        const centerRow = Math.floor(rows / 2);
+        const centerCol = Math.floor(cols / 2);
+
+        let world = [];
+        let worldRows = 10;
+        let worldCols = 10;
+        // for (let y = 0; y < rows; y++) {
+        //     world.push([]);
+        //     for (let x = 0; x < cols; x++) {
+        //         if (y == 0 || x == 0 || y == rows - 1 || x == cols - 1) {
+        //             world[y].push('wall');
+        //         }
+        //         else if (y == centerRow || x == centerCol) {
+        //             world[y].push('path');
+        //         }
+        //         else if (Math.random() < 0.05) {
+        //             world[y].push('block');
+        //         }
+        //         else {
+        //             world[y].push('grass');
+        //         }
+        //     }
+        // }
+        const camera = {
+            x: 0,
+            y: 0,
+            width: cols * tileSize,
+            height: rows * tileSize,
+            update: function (playerX, playerY) {
+                this.x = Math.max(0, Math.min(
+                    playerX * tileSize - this.width / 2,
+                    worldCols * tileSize - this.width
+                ));
+                this.y = Math.max(0, Math.min(
+                    playerY * tileSize - this.height / 2,
+                    worldRows * tileSize - this.height
+                ));
+            }
+        }
+
+        const player = {
+            row: centerRow,
+            col: centerCol,
+            width: tileSize * 2,
+            height: tileSize * 2,
+            currentFrame: 0,
+            frameCount: 0,
+            direction: 'down',
+        }
+        const spriteConfig = {
+            width: 32,
+            height: 32,
+            cols: 6,
+            frameCount: 6,
+            animationSpeed: 6,
+        }
+
+        function drawWorld() {
+            const startCol = Math.floor(camera.x / tileSize);
+            const endCol = Math.min(worldCols, startCol + cols);
+            const startRow = Math.floor(camera.y / tileSize);
+            const endRow = Math.min(worldRows, startRow + rows);
+
+            for (let y = startRow; y < endRow; y++) {
+                for (let x = startCol; x < endCol; x++) {
+                    const tile = world[y][x];
+                    const screenX = x * tileSize - camera.x;
+                    const screenY = y * tileSize - camera.y;
+                    ctx.drawImage(grassImg, screenX, screenY, tileSize, tileSize);
+                    let img;
+                    if (tile == 'wall') {
+                        img = wallImg;
+                    }
+                    else if (tile == 'block') {
+                        img = blockImg;
+                    }
+                    if (tile == 'path') {
+                        img = pathImg;
+                    }
+                    if (img) {
+                        ctx.drawImage(img, screenX, screenY, tileSize, tileSize);
+                    }
+                }
+            }
+        }
+
+        function drawPlayer() {
+            player.frameCount++;
+            if (player.frameCount >= spriteConfig.animationSpeed) {
+                player.frameCount = 0;
+                player.currentFrame = (player.currentFrame + 1) % spriteConfig.frameCount;
+            }
+            const frameX = player.currentFrame * spriteConfig.width;
+            const playerImg = playerImages[player.direction];
+
+            const screenX = player.col * tileSize - tileSize / 2 - camera.x;
+            const screenY = player.row * tileSize - tileSize / 2 - camera.y;
+            ctx.drawImage(playerImg,
+                frameX, 0, spriteConfig.width, spriteConfig.height,
+                screenX, screenY, player.width, player.height);
+        }
+
+        function animation() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            camera.update(player.col, player.row);
+            drawWorld();
+            drawPlayer();
+            requestAnimationFrame(animation);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            const newPos = {
+                col: player.col,
+                row: player.row,
+            }
+            switch (e.key) {
+                case 'ArrowUp': newPos.row--; player.direction = 'up'; break;
+                case 'ArrowDown': newPos.row++; player.direction = 'down'; break;
+                case 'ArrowLeft': newPos.col--; player.direction = 'left'; break;
+                case 'ArrowRight': newPos.col++; player.direction = 'right'; break;
+            }
+            const tile = world[newPos.row][newPos.col];
+            if (tile == 'wall') {
+                return;
+            } else if (tile == 'block') {
+                const test = canMove(newPos.row, newPos.col, player.direction);
+                if (test.canMove) {
+                    player.col = newPos.col;
+                    player.row = newPos.row;
+
+                    world[newPos.row][newPos.col] = 'grass';
+                    world[test.row][test.col] = 'block';
+                }
+            } else {
+                player.col = newPos.col;
+                player.row = newPos.row;
+            }
+        });
+        function canMove(row, col, direction) {
+            switch (direction) {
+                case 'up': row--; break;
+                case 'down': row++; break;
+                case 'left': col--; break;
+                case 'right': col++; break;
+            }
+            return {
+                row, col,
+                canMove: world[row][col] !== 'wall' && world[row][col] !== 'block',
+            }
+        }
+        // animation();
+        grassImg.onload = async () => {
+            const response = await fetch('assets/world.json');
+            world = await response.json();
+            worldRows = world?.length || 10;
+            worldCols = world?.[0]?.length || 10;
+            animation();
+        }
+    </script>
+</body>
+
+</html>
